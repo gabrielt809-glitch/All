@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>ProdHub</title>
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ProdHub">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3233/3233100.png">
+
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+      /* Ajuste para a barra de status do iOS não cobrir o conteúdo */
+      body {
+        padding-top: env(safe-area-inset-top);
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+    </style>
+  </head>
+  <body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col justify-between">
+
+    <div id="auth-screen" class="flex-1 flex flex-col justify-center px-6 py-12 max-w-sm mx-auto w-full">
+      <div class="text-center mb-8">
+        <h1 class="text-4xl font-extrabold tracking-tight text-indigo-400">ProdHub</h1>
+        <p class="mt-2 text-sm text-slate-400">Seu ecossistema de produtividade pessoal</p>
+      </div>
+
+      <div class="bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-700">
+        <h2 id="auth-title" class="text-xl font-bold mb-6 text-center text-white">Entrar na sua Conta</h2>
+        
+        <form id="auth-form" onsubmit="handleAuth(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">E-mail</label>
+            <input type="email" id="email" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors" placeholder="seu@email.com">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Senha</label>
+            <input type="password" id="password" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors" placeholder="••••••••">
+          </div>
+
+          <button type="submit" id="btn-submit" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 rounded-xl transition-all shadow-lg active:scale-95 mt-2">
+            Entrar
+          </button>
+        </form>
+
+        <div class="mt-6 text-center">
+          <a href="#" id="btn-toggle-auth" onclick="toggleAuthMode(event)" ontouchstart="toggleAuthMode(event)" class="text-sm text-indigo-400 hover:underline block py-2 cursor-pointer">
+            Não tem uma conta? Cadastre-se
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div id="app-screen" class="hidden flex-1 flex flex-col p-6 max-w-md mx-auto w-full">
+      <header class="flex justify-between items-center mb-6 border-b border-slate-800 pb-4">
+        <div>
+          <h2 class="text-xs font-bold uppercase tracking-widest text-slate-400">Bem-vindo</h2>
+          <p id="user-display" class="text-lg font-bold text-white">Usuário</p>
+        </div>
+        <button onclick="handleLogout()" ontouchstart="handleLogout()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-2 rounded-xl border border-slate-700 active:scale-95">
+          Sair
+        </button>
+      </header>
+
+      <main class="flex-1">
+        <div class="bg-indigo-600/10 border border-indigo-500/20 rounded-2xl p-6 text-center">
+          <h3 class="text-xl font-bold text-indigo-400 mb-2">Conexão Estabelecida! ⚡</h3>
+          <p class="text-sm text-slate-300">Seu app está conectado com sucesso ao Supabase. Próximo passo: construir a lista de tarefas e hábitos.</p>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      // Inicialização do Supabase usando as suas chaves fornecidas
+      const SUPABASE_URL = "https://uxblzuaivfcqqqmctbbo.supabase.co";
+      const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4Ymx6dWFpdmZjcXFxbWN0YmJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNDg4MzUsImV4cCI6MjA5NjYyNDgzNX0.kHYLy4sadofWHScwm8r0SdNyRh4__9m3Je5llUlg0Kc";
+      
+      let supabase;
+      try {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      } catch (e) {
+        alert("Erro ao iniciar Supabase: " + e.message);
+      }
+
+      let isLoginMode = true;
+
+      // Altera entre Modo Login e Modo Cadastro
+      function toggleAuthMode(event) {
+        if (event) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        
+        isLoginMode = !isLoginMode;
+        
+        const title = document.getElementById('auth-title');
+        const btnSubmit = document.getElementById('btn-submit');
+        const btnToggle = document.getElementById('btn-toggle-auth');
+
+        if (isLoginMode) {
+          title.textContent = 'Entrar na sua Conta';
+          btnSubmit.textContent = 'Entrar';
+          btnToggle.textContent = 'Não tem uma conta? Cadastre-se';
+        } else {
+          title.textContent = 'Criar Nova Conta';
+          btnSubmit.textContent = 'Cadastrar';
+          btnToggle.textContent = 'Já tem uma conta? Faça Login';
+        }
+      }
+
+      // Gerencia o Envio do Formulário (Login ou Cadastro)
+      async function handleAuth(event) {
+        event.preventDefault();
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const btnSubmit = document.getElementById('btn-submit');
+
+        btnSubmit.disabled = true;
+        btnSubmit.textContent = 'Processando...';
+
+        try {
+          if (isLoginMode) {
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) throw error;
+            checkUser();
+          } else {
+            const { data, error } = await supabase.auth.signUp({ email, password });
+            if (error) throw error;
+            alert('Cadastro realizado com sucesso! Você já pode tentar fazer o login.');
+            toggleAuthMode();
+          }
+        } catch (error) {
+          alert('Erro na autenticação: ' + error.message);
+        } finally {
+          btnSubmit.disabled = false;
+          btnSubmit.textContent = isLoginMode ? 'Entrar' : 'Cadastrar';
+        }
+      }
+
+      // Realiza o Logout
+      async function handleLogout() {
+        await supabase.auth.signOut();
+        checkUser();
+      }
+
+      // Verifica se o usuário já está logado para exibir a tela correta
+      async function checkUser() {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          
+          const authScreen = document.getElementById('auth-screen');
+          const appScreen = document.getElementById('app-screen');
+          const userDisplay = document.getElementById('user-display');
+
+          if (user) {
+            authScreen.classList.add('hidden');
+            appScreen.classList.remove('hidden');
+            userDisplay.textContent = user.email;
+          } else {
+            authScreen.classList.remove('hidden');
+            appScreen.classList.add('hidden');
+            document.getElementById('auth-form').reset();
+          }
+        } catch (e) {
+          // Silencioso na checagem inicial caso não mude o estado
+        }
+      }
+
+      // Executa a verificação assim que a página carrega
+      window.onload = checkUser;
+    </script>
+  </body>
+</html>
