@@ -5,13 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>ProdHub</title>
 
+    <!-- Configurações para parecer App Nativo no iOS -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ProdHub">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3233/3233100.png">
+    <link class="apple-touch-icon" rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3233/3233100.png">
 
+    <!-- Tailwind CSS para o Design Moderno -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 
+    <!-- Script Oficial do Supabase via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
@@ -25,6 +28,7 @@
   </head>
   <body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col justify-between">
 
+    <!-- Tela de Autenticação (Login / Cadastro) -->
     <div id="auth-screen" class="flex-1 flex flex-col justify-center px-6 py-12 max-w-sm mx-auto w-full">
       <div class="text-center mb-8">
         <h1 class="text-4xl font-extrabold tracking-tight text-indigo-400">ProdHub</h1>
@@ -51,13 +55,14 @@
         </form>
 
         <div class="mt-6 text-center">
-          <button id="btn-toggle-auth" onclick="toggleAuthMode()" class="text-sm text-indigo-400 hover:underline">
+          <button type="button" id="btn-toggle-auth" onclick="toggleAuthMode()" class="text-sm text-indigo-400 hover:underline cursor-pointer">
             Não tem uma conta? Cadastre-se
           </button>
         </div>
       </div>
     </div>
 
+    <!-- Tela Principal do App (Inicialmente Oculta) -->
     <div id="app-screen" class="hidden flex-1 flex flex-col p-6 max-w-md mx-auto w-full">
       <header class="flex justify-between items-center mb-6 border-b border-slate-800 pb-4">
         <div>
@@ -77,12 +82,13 @@
       </main>
     </div>
 
+    <!-- Lógica de Funcionamento do App -->
     <script>
       // Inicialização do Supabase usando as suas chaves fornecidas
       const SUPABASE_URL = "https://uxblzuaivfcqqqmctbbo.supabase.co";
-      const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInRefiI6InV4Ymx6dWFpdmZjcXFxbWN0YmJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNDg4MzUsImV4cCI6MjA5NjYyNDgzNX0.kHYLy4sadofWHScwm8r0SdNyRh4__9m3Je5llUlg0Kc";
+      const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4Ymx6dWFpdmZjcXFxbWN0YmJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNDg4MzUsImV4cCI6MjA5NjYyNDgzNX0.kHYLy4sadofWHScwm8r0SdNyRh4__9m3Je5llUlg0Kc";
       
-      const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
       let isLoginMode = true;
 
@@ -94,13 +100,13 @@
         const btnToggle = document.getElementById('btn-toggle-auth');
 
         if (isLoginMode) {
-          title.innerText = 'Entrar na sua Conta';
-          btnSubmit.innerText = 'Entrar';
-          btnToggle.innerText = 'Não tem uma conta? Cadastre-se';
+          title.textContent = 'Entrar na sua Conta';
+          btnSubmit.textContent = 'Entrar';
+          btnToggle.textContent = 'Não tem uma conta? Cadastre-se';
         } else {
-          title.innerText = 'Criar Nova Conta';
-          btnSubmit.innerText = 'Cadastrar';
-          btnToggle.innerText = 'Já tem uma conta? Faça Login';
+          title.textContent = 'Criar Nova Conta';
+          btnSubmit.textContent = 'Cadastrar';
+          btnToggle.textContent = 'Já tem uma conta? Faça Login';
         }
       }
 
@@ -112,7 +118,7 @@
         const btnSubmit = document.getElementById('btn-submit');
 
         btnSubmit.disabled = true;
-        btnSubmit.innerText = 'Processando...';
+        btnSubmit.textContent = 'Processando...';
 
         try {
           if (isLoginMode) {
@@ -124,14 +130,14 @@
             // Realiza o Cadastro
             const { data, error } = await supabase.auth.signUp({ email, password });
             if (error) throw error;
-            alert('Cadastro realizado! Se configurou confirmação, verifique seu e-mail. Caso contrário, já pode fazer login.');
+            alert('Cadastro realizado! Verifique seu e-mail para confirmação se necessário.');
             toggleAuthMode();
           }
         } catch (error) {
           alert('Erro: ' + error.message);
         } finally {
           btnSubmit.disabled = false;
-          btnSubmit.innerText = isLoginMode ? 'Entrar' : 'Cadastrar';
+          btnSubmit.textContent = isLoginMode ? 'Entrar' : 'Cadastrar';
         }
       }
 
@@ -152,7 +158,7 @@
         if (user) {
           authScreen.classList.add('hidden');
           appScreen.classList.remove('hidden');
-          userDisplay.innerText = user.email;
+          userDisplay.textContent = user.email;
         } else {
           authScreen.classList.remove('hidden');
           appScreen.classList.add('hidden');
