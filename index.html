@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>ProdHub</title>
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ProdHub">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3233/3233100.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+      body {
+        padding-top: env(safe-area-inset-top);
+        -webkit-tap-highlight-color: transparent;
+      }
+    </style>
+  </head>
+  <body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col justify-between">
+
+    <div id="auth-screen" class="flex-1 flex flex-col justify-center px-6 py-12 max-w-sm mx-auto w-full relative z-10">
+      <div class="text-center mb-8">
+        <h1 class="text-4xl font-extrabold tracking-tight text-indigo-400">ProdHub</h1>
+        <p class="mt-2 text-sm text-slate-400">Seu ecossistema de produtividade</p>
+      </div>
+
+      <div class="bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-700">
+        <h2 id="auth-title" class="text-xl font-bold mb-6 text-center text-white">Entrar na sua Conta</h2>
+        
+        <form id="auth-form" onsubmit="realizarAutenticacao(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">E-mail</label>
+            <input type="email" id="email" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500" placeholder="seu@email.com">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Senha</label>
+            <input type="password" id="password" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500" placeholder="••••••••">
+          </div>
+
+          <button type="submit" id="btn-submit" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-lg mt-2 relative z-20">
+            Entrar
+          </button>
+        </form>
+
+        <div class="mt-6 text-center relative z-20">
+          <button type="button" onclick="mudarModoAuth()" class="text-sm text-indigo-400 font-bold uppercase tracking-wide w-full py-4">
+            Não tem conta? Cadastre-se
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="app-screen" class="hidden flex-1 flex flex-col p-6 max-w-md mx-auto w-full relative z-10">
+      <header class="flex justify-between items-center mb-6 border-b border-slate-800 pb-4">
+        <div>
+          <h2 class="text-xs font-bold uppercase tracking-widest text-slate-400">Bem-vindo</h2>
+          <p id="user-display" class="text-lg font-bold text-white">Usuário</p>
+        </div>
+        <button onclick="fazerLogout()" class="bg-slate-800 text-slate-300 text-xs px-3 py-2 rounded-xl border border-slate-700">
+          Sair
+        </button>
+      </header>
+
+      <main class="flex-1">
+        <div class="bg-indigo-600/10 border border-indigo-500/20 rounded-2xl p-6 text-center">
+          <h3 class="text-xl font-bold text-indigo-400 mb-2">Conexão Estabelecida! ⚡</h3>
+          <p class="text-sm text-slate-300">Banco de dados conectado. Pronto para criar tarefas.</p>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      // 1. LÓGICA DE INTERFACE BLINDADA (Funciona indepentente de erros externos)
+      let isLoginMode = true;
+
+      function mudarModoAuth() {
+        isLoginMode = !isLoginMode;
+        
+        const title = document.getElementById('auth-title');
+        const btnSubmit = document.getElementById('btn-submit');
+        const btnToggle = document.querySelector('button[onclick="mudarModoAuth()"]');
+
+        if (isLoginMode) {
+          title.innerText = 'Entrar na sua Conta';
+          btnSubmit.innerText = 'Entrar';
+          btnToggle.innerText = 'Não tem conta? Cadastre-se';
+        } else {
+          title.innerText = 'Criar Nova Conta';
+          btnSubmit.innerText = 'Cadastrar';
+          btnToggle.innerText = 'Já tem conta? Faça Login';
+        }
+      }
+
+      // 2. CONEXÃO COM O BANCO DE DADOS (Com tratamento de erro)
+      let supabase;
+      try {
+        const SUPABASE_URL = "https://uxblzuaivfcqqqmctbbo.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4Ymx6dWFpdmZjcXFxbWN0YmJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNDg4MzUsImV4cCI6MjA5NjYyNDgzNX0.kHYLy4sadofWHScwm8r0SdNyRh4__9m3Je5llUlg0Kc";
+        if (window.supabase) {
+          supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        }
+      } catch (e) {
+        console.error("Erro ao carregar banco:", e);
+      }
+
+      // 3. FUNÇÕES DE LOGIN/CADASTRO
+      async function realizarAutenticacao(e) {
+        e.preventDefault();
+        
+        if (!supabase) {
+          alert("Aguarde a conexão estabilizar ou recarregue a página.");
+          return;
+        }
+
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const btnSubmit = document.getElementById('btn-submit');
+
+        btnSubmit.disabled = true;
+        btnSubmit.innerText = 'Processando...';
+
+        try {
+          if (isLoginMode) {
+            const { error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) throw error;
+            verificarUsuario();
+          } else {
+            const { error } = await supabase.auth.signUp({ email, password });
+            if (error) throw error;
+            alert('Cadastro realizado! Tente fazer o login.');
+            mudarModoAuth(); // Volta a tela para o modo de login
+          }
+        } catch (error) {
+          alert('Erro: ' + error.message);
+        } finally {
+          btnSubmit.disabled = false;
+          btnSubmit.innerText = isLoginMode ? 'Entrar' : 'Cadastrar';
+        }
+      }
+
+      async function fazerLogout() {
+        if (supabase) await supabase.auth.signOut();
+        verificarUsuario();
+      }
+
+      async function verificarUsuario() {
+        if (!supabase) return;
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          
+          const authScreen = document.getElementById('auth-screen');
+          const appScreen = document.getElementById('app-screen');
+          const userDisplay = document.getElementById('user-display');
+
+          if (user) {
+            authScreen.classList.add('hidden');
+            appScreen.classList.remove('hidden');
+            userDisplay.innerText = user.email;
+          } else {
+            authScreen.classList.remove('hidden');
+            appScreen.classList.add('hidden');
+            document.getElementById('auth-form').reset();
+          }
+        } catch(e) {}
+      }
+
+      // Verifica sessão ao abrir com um leve delay para garantir que tudo carregou
+      setTimeout(verificarUsuario, 500);
+    </script>
+  </body>
+</html>
