@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>ProdHub</title>
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ProdHub">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3233/3233100.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+      body {
+        /* Garante que o conteúdo respeite a franja e a barra inferior do iPhone */
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+        -webkit-tap-highlight-color: transparent;
+      }
+    </style>
+  </head>
+  <body class="bg-slate-900 text-slate-100 min-h-screen font-sans flex flex-col relative">
+
+    <div id="debug-log" class="fixed top-0 left-0 w-full bg-red-600 text-white text-[10px] font-mono z-[9999] px-2 break-words empty:hidden"></div>
+
+    <div class="fixed top-12 right-4 text-xs font-bold text-fuchsia-400 bg-slate-800 border border-fuchsia-500 px-3 py-1 rounded-full z-50 shadow-lg">
+      v7.0 - Nuclear
+    </div>
+
+    <div id="auth-screen" class="flex-1 flex flex-col justify-center px-6 max-w-sm mx-auto w-full pb-20">
+      <div class="text-center mb-8">
+        <h1 class="text-4xl font-extrabold text-indigo-400 tracking-tight">ProdHub</h1>
+      </div>
+
+      <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl">
+        <h2 id="auth-title" class="text-xl font-bold mb-6 text-center text-white">Entrar na sua Conta</h2>
+
+        <form id="auth-form" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">E-mail</label>
+            <input type="email" id="email" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500" placeholder="seu@email.com">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Senha</label>
+            <input type="password" id="password" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500" placeholder="••••••••">
+          </div>
+
+          <button type="button" id="btn-submit" onclick="fazerAcesso(event)" class="w-full bg-indigo-500 text-white font-bold py-4 rounded-xl mt-4 active:bg-indigo-600 transition-colors">
+            Entrar
+          </button>
+        </form>
+
+        <div class="mt-6 border-t border-slate-700 pt-6 text-center">
+          <a href="javascript:void(0);" onclick="alternarTela(event)" class="block w-full py-4 bg-slate-900 border border-slate-600 rounded-xl text-sm text-indigo-400 font-bold active:bg-slate-700 transition-colors">
+            <span id="btn-toggle-text">Não tem conta? Cadastre-se</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div id="app-screen" class="hidden flex-1 flex flex-col p-6 max-w-md mx-auto w-full mt-12">
+      <header class="flex justify-between items-center mb-6 border-b border-slate-800 pb-4">
+        <h2 class="text-lg font-bold text-white" id="user-display">Usuário</h2>
+        <a href="javascript:void(0);" onclick="sairDaConta()" class="bg-slate-800 text-slate-300 px-4 py-2 rounded-xl text-sm border border-slate-700 active:bg-slate-700">Sair</a>
+      </header>
+      <div class="bg-indigo-600/10 border border-indigo-500/20 p-6 rounded-2xl text-center">
+        <h3 class="text-xl text-indigo-400 font-bold mb-2">Conectado! ⚡</h3>
+        <p class="text-sm text-slate-400">Pode comemorar que o banco ligou.</p>
+      </div>
+    </div>
+
+    <script>
+      // Capturador de Erros do iOS
+      window.onerror = function(msg, url, lineNo, columnNo, error) {
+        document.getElementById('debug-log').innerText = 'ERRO: ' + msg;
+        return false;
+      };
+
+      // 1. LÓGICA DE TROCA DE TELA
+      let isLogin = true;
+
+      window.alternarTela = function(e) {
+        if(e) e.preventDefault();
+        
+        isLogin = !isLogin;
+        
+        const title = document.getElementById('auth-title');
+        const btnSubmit = document.getElementById('btn-submit');
+        const toggleText = document.getElementById('btn-toggle-text');
+
+        if (isLogin) {
+          title.innerText = 'Entrar na sua Conta';
+          btnSubmit.innerText = 'Entrar';
+          toggleText.innerText = 'Não tem conta? Cadastre-se';
+        } else {
+          title.innerText = 'Criar Nova Conta';
+          btnSubmit.innerText = 'Cadastrar';
+          toggleText.innerText = 'Já tem conta? Faça Login';
+        }
+      };
+
+      // 2. SUPABASE
+      const SUPABASE_URL = "https://uxblzuaivfcqqqmctbbo.supabase.co";
+      const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4Ymx6dWFpdmZjcXFxbWN0YmJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwNDg4MzUsImV4cCI6MjA5NjYyNDgzNX0.kHYLy4sadofWHScwm8r0SdNyRh4__9m3Je5llUlg0Kc";
+      
+      let supabase = null;
+      if (window.supabase) {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      }
+
+      window.fazerAcesso = async function(e) {
+        if(e) e.preventDefault();
+        if (!supabase) return alert('Supabase offline.');
+
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const btnSubmit = document.getElementById('btn-submit');
+
+        btnSubmit.disabled = true;
+        btnSubmit.innerText = 'Carregando...';
+
+        try {
+          if (isLogin) {
+            const { error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) throw error;
+          } else {
+            const { error } = await supabase.auth.signUp({ email, password });
+            if (error) throw error;
+            alert('Cadastro top! Agora faz o login.');
+            window.alternarTela();
+          }
+          verificarSessao();
+        } catch (error) {
+          alert('Erro: ' + error.message);
+        } finally {
+          btnSubmit.disabled = false;
+          btnSubmit.innerText = isLogin ? 'Entrar' : 'Cadastrar';
+        }
+      };
+
+      window.sairDaConta = async function() {
+        if (supabase) await supabase.auth.signOut();
+        verificarSessao();
+      };
+
+      window.verificarSessao = async function() {
+        if (!supabase) return;
+        const { data } = await supabase.auth.getUser();
+
+        if (data && data.user) {
+          document.getElementById('auth-screen').style.display = 'none';
+          document.getElementById('app-screen').style.display = 'flex';
+          document.getElementById('user-display').innerText = data.user.email;
+        } else {
+          document.getElementById('auth-screen').style.display = 'flex';
+          document.getElementById('app-screen').style.display = 'none';
+        }
+      };
+
+      setTimeout(window.verificarSessao, 500);
+    </script>
+  </body>
+</html>
